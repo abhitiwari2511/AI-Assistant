@@ -1,0 +1,17 @@
+node_modules
+.env
+dist/
+build/
+out/
+.vite/
+.eslintcache
+
+# TypeScript
+*.tsbuildinfo
+
+# Logs and runtime
+logs/
+*.log
+
+# Editor/OS
+.vscode/

@@ -1,0 +1,161 @@
+import { User } from "../models/user.model";
+import asyncHandler from "../utils/asyncHandler";
+import jwt from "jsonwebtoken";
+
+const generateAccessAndRefreshToken = async (userId: string) => {
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new Error("Something went wrong while creating user");
+  }
+};
+
+export const registerUser = asyncHandler(async (req, res) => {
+  const { fullName, email, password } = req.body;
+
+  if ([fullName, email, password].some((item, index) => item?.trim() === "")) {
+    throw new Error("All fields are required");
+  }
+
+  const existedUser = await User.findOne({
+    email,
+  });
+
+  if (existedUser) {
+    return res.status(400).json({
+      message: "user already exists",
+    });
+  }
+
+  if (password.length < 6) {
+    return res.status(400).json({
+      message: "Password must be at least 6 characters long",
+    });
+  }
+
+  const user = await User.create({
+    fullName,
+    email,
+    password,
+  });
+
+  const createdUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+  if (!createdUser) {
+    return res.status(500).json({
+      message: "Failed to create user",
+    });
+  }
+
+  return res.status(201).json({
+    createdUser,
+  });
+});
+
+export const login = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  if (!email || !password) {
+    throw new Error("Email and password are required");
+  }
+
+  const user = await User.findOne({
+    email,
+  });
+
+  if (!user) {
+    return res.status(404).json({
+      message: "User not found",
+    });
+  }
+
+  const passValid = await user.isPasswordCorrect(password);
+  if (!passValid) {
+    res.status(401).json({
+      message: "Password is incorrect",
+    });
+  }
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshToken(
+    user._id.toString()
+  );
+  const loggedInUser = await User.findById(user._id).select(
+    "-password -refreshToken"
+  );
+
+  // for cookies
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options)
+    .cookie("refreshToken", refreshToken, options)
+    .json({
+      user: loggedInUser,
+      accessToken,
+      refreshToken,
+      message: "User logged in successfully",
+    });
+});
+
+export const logout = asyncHandler(async (req, res) => {
+  // clear cookie and token
+  await User.findByIdAndUpdate(
+    (req as any).user._id,
+    {
+      $unset: {
+        refreshToken: 1,
+      },
+    },
+    { new: true }
+  );
+
+  const options = {
+    httponly: true,
+    secure: true,
+  };
+
+  return res.status(200)
+  .cookie("refreshToken", options)
+  .cookie("accessToken", options)
+  .json({
+    message: "User logged out successfully"
+  });
+});
+
+export const refreshAccessToken = asyncHandler(async (req, res) => {
+  const incomingToken = req.cookies.refreshToken || req.body.refreshToken;
+
+  if (!incomingToken) {
+    return res.status(401).json({
+      message: "Unauthorized access"
+    })
+  }
+
+  try {
+    const matchedToken = process.env.REFRESH_TOKEN_SECRET;
+    if (!matchedToken) {
+      return res.status(401).json({
+        message: "Server Configuration Error : JWT Secret Not Found"
+      })
+    }
+
+    const decodedToken = jwt.verify(incomingToken, matchedToken);
+  } catch (error) {
+    
+  }
+})
