@@ -1,3 +1,4 @@
+import { NextFunction } from "express";
 
 export interface UserType {
     fullName: string;
@@ -13,3 +14,6 @@ export interface UserMethods {
     generateAccessToken: () => string;
     generateRefreshToken: () => string;
 }
+ export interface decodedToken {
+    _id: string;
+ }

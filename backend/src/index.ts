@@ -4,7 +4,7 @@ import connectDB from "./db/db";
 
 dotenv.config({
   path: "./env",
-}); 
+});
 
 connectDB()
   .then(() => {
@@ -13,5 +13,5 @@ connectDB()
     });
   })
   .catch((err) => {
-    console.log("MongoDB connection failde", err);
+    console.log("MongoDB connection failed", err);
   });

@@ -1,4 +1,5 @@
 import { User } from "../models/user.model";
+import { decodedToken } from "../types";
 import asyncHandler from "../utils/asyncHandler";
 import jwt from "jsonwebtoken";
 
@@ -20,10 +21,10 @@ const generateAccessAndRefreshToken = async (userId: string) => {
   }
 };
 
-export const registerUser = asyncHandler(async (req, res) => {
+const registerUser = asyncHandler(async (req, res) => {
   const { fullName, email, password } = req.body;
 
-  if ([fullName, email, password].some((item, index) => item?.trim() === "")) {
+  if ([fullName, email, password].some((item) => item?.trim() === "")) {
     throw new Error("All fields are required");
   }
 
@@ -63,7 +64,7 @@ export const registerUser = asyncHandler(async (req, res) => {
   });
 });
 
-export const login = asyncHandler(async (req, res) => {
+const login = asyncHandler(async (req, res) => {
   const { email, password } = req.body;
 
   if (!email || !password) {
@@ -112,7 +113,7 @@ export const login = asyncHandler(async (req, res) => {
     });
 });
 
-export const logout = asyncHandler(async (req, res) => {
+const logout = asyncHandler(async (req, res) => {
   // clear cookie and token
   await User.findByIdAndUpdate(
     (req as any).user._id,
@@ -129,33 +130,70 @@ export const logout = asyncHandler(async (req, res) => {
     secure: true,
   };
 
-  return res.status(200)
-  .cookie("refreshToken", options)
-  .cookie("accessToken", options)
-  .json({
-    message: "User logged out successfully"
-  });
+  return res
+    .status(200)
+    .cookie("refreshToken", options)
+    .cookie("accessToken", options)
+    .json({
+      message: "User logged out successfully",
+    });
 });
 
-export const refreshAccessToken = asyncHandler(async (req, res) => {
+const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingToken = req.cookies.refreshToken || req.body.refreshToken;
 
   if (!incomingToken) {
     return res.status(401).json({
-      message: "Unauthorized access"
-    })
+      message: "Unauthorized access",
+    });
   }
 
   try {
     const matchedToken = process.env.REFRESH_TOKEN_SECRET;
     if (!matchedToken) {
       return res.status(401).json({
-        message: "Server Configuration Error : JWT Secret Not Found"
-      })
+        message: "Server Configuration Error : JWT Secret Not Found",
+      });
     }
 
-    const decodedToken = jwt.verify(incomingToken, matchedToken);
+    const decodedToken = jwt.verify(
+      incomingToken,
+      matchedToken
+    ) as decodedToken;
+
+    const user = await User.findById(decodedToken._id);
+    if (!user) {
+      return res.status(401).json({
+        message: "Invalid refresh token",
+      });
+    }
+
+    if (incomingToken !== user?.refreshToken) {
+      return res.status(401).json({
+        message: "Refresh Token is Expired",
+      });
+    }
+
+    const options = {
+      httpOnly: true,
+      secure: true,
+    };
+
+    const newToken = await generateAccessAndRefreshToken(user._id.toString());
+
+    return res
+      .status(200)
+      .cookie("accessToken", newToken.accessToken, options)
+      .cookie("refreshToken", newToken.refreshToken, options)
+      .json({
+        message: "Access token refreshed successfully",
+      });
+
   } catch (error) {
-    
+    return res.status(500).json({
+      message: "Server Error",
+    });
   }
-})
+});
+
+export {generateAccessAndRefreshToken, registerUser, login, logout, refreshAccessToken}
