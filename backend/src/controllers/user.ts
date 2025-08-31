@@ -132,8 +132,8 @@ const logout = asyncHandler(async (req, res) => {
 
   return res
     .status(200)
-    .cookie("refreshToken", options)
-    .cookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .clearCookie("accessToken", options)
     .json({
       message: "User logged out successfully",
     });
@@ -188,7 +188,6 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
       .json({
         message: "Access token refreshed successfully",
       });
-
   } catch (error) {
     return res.status(500).json({
       message: "Server Error",
@@ -196,4 +195,18 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
   }
 });
 
-export {generateAccessAndRefreshToken, registerUser, login, logout, refreshAccessToken}
+const getCurrentUser = asyncHandler(async (req, res) => {
+  return res.status(200).json({
+    user: (req as any).User,
+    msg: "User fetched successfully",
+  });
+});
+
+export {
+  generateAccessAndRefreshToken,
+  registerUser,
+  login,
+  logout,
+  refreshAccessToken,
+  getCurrentUser,
+};
