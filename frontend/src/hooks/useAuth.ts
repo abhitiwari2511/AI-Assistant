@@ -50,7 +50,7 @@ export function useAuthHandler({ mode }: AuthProps) {
           },
         }
       );
-      navigate("/ai-avtar");
+      navigate("/choose-avatar");
     } catch (error: unknown) {
       console.error("Authentication error:", error);
       setLoading(false);

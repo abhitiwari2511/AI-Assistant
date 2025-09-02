@@ -197,7 +197,8 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
 
 const getCurrentUser = asyncHandler(async (req, res) => {
   return res.status(200).json({
-    user: (req as any).User,
+    success: true,
+    user: (req as any).user,
     msg: "User fetched successfully",
   });
 });

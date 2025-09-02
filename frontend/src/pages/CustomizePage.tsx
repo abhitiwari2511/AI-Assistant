@@ -13,6 +13,7 @@ const CustomizePage = () => {
   ];
   const icon = <LuImagePlus size={50} />;
   const [selectedKey, setSelectedKey] = useState<string>("image-0");
+  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const navigate = useNavigate();
 
   return (
@@ -36,9 +37,15 @@ const CustomizePage = () => {
           icon={icon}
           isSelected={selectedKey === "input"}
           onSelect={() => setSelectedKey("input")}
+          onFilePicked={(file) => {
+            setUploadedFile(file);
+            setSelectedKey("input");
+          }}
         />
       </div>
-      <Button className="mt-12 hover:bg-cyan-200 cursor-pointer rounded-full bg-white text-black text-2xl h-[3rem] w-[8rem]" onClick={() => navigate("/ai-name")}>
+      <Button className="mt-12 hover:bg-cyan-200 cursor-pointer rounded-full bg-white text-black text-2xl h-[3rem] w-[8rem]" onClick={() => navigate("/ai-name", {
+        state: { selectedKey, uploadedFile, imageUrl: image[0].imgUrl}
+      })}>
         Next
       </Button>
     </div>

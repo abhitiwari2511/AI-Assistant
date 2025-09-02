@@ -4,6 +4,8 @@ import SignIn from "./pages/SignIn";
 import HomePage from "./pages/HomePage";
 import CustomizePage from "./pages/CustomizePage";
 import SplashCursor from "./components/ui/SplashCursor/SplashCursor"
+import AiName from "./components/AiName";
+import AiPage from "./pages/AiPage";
 
 function App() {
   return (
@@ -13,7 +15,9 @@ function App() {
         <Route path="/" element={<HomePage />} />
         <Route path="/signup" element={<SignUp />} />
         <Route path="/signin" element={<SignIn />} />
-        <Route path="/ai-avtar" element={<CustomizePage />} />
+        <Route path="/choose-avatar" element={<CustomizePage />} />
+        <Route path="/ai-name" element={<AiName />} />
+        <Route path="/ai" element={<AiPage />} />
       </Routes>
     </div>
   );

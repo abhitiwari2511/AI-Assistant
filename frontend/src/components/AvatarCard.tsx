@@ -8,6 +8,10 @@ type AvatarCardProps = {
   onSelect: () => void;
 };
 
+type UploadCardProp = AvatarCardProps & {
+  onFilePicked: (file: File | null) => void;
+}
+
 const AvatarCard = ({ image, isSelected, onSelect }: AvatarCardProps) => {
   return (
     <div className="flex justify-center items-center" onClick={onSelect}>
@@ -28,16 +32,15 @@ const AvatarCard = ({ image, isSelected, onSelect }: AvatarCardProps) => {
   );
 };
 
-const UploadCard = ({ icon, isSelected, onSelect }: AvatarCardProps) => {
-  const [backendImage, setBackendImage] = useState<File | null>(null);
+const UploadCard = ({ icon, isSelected, onSelect, onFilePicked }: UploadCardProp) => {
   const [frontendImage, setFrontendImage] = useState<string | null>(null);
   
   const inputImage = useRef<HTMLInputElement>(null);
 
   const handleImage = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
-    setBackendImage(file ?? null);
     setFrontendImage(file ? URL.createObjectURL(file) : null);
+    onFilePicked(file ?? null);
   };
 
   return (

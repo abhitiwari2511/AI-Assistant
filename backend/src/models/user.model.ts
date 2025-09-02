@@ -27,6 +27,9 @@ const userSchema = new Schema<UserType, UserModel, UserMethods>(
     assistantName: {
       type: String
     },
+    assistantImage: {
+      type: String
+    },
     refreshToken: {
         type: String
     },

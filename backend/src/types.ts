@@ -5,6 +5,7 @@ export interface UserType {
     email: string;
     password: string;
     assistantName?: string;
+    assistantImage?: string;
     refreshToken?: string;
     history: string[];
 }

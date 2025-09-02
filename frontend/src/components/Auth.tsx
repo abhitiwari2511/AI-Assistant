@@ -11,12 +11,11 @@ import {
 import { Label } from "./ui/label";
 import { Input } from "./ui/input";
 import { Button } from "./ui/button";
+import { useAuthHandler } from "@/hooks/useAuth";
 
 interface AuthProps {
   mode: "signin" | "signup";
 }
-
-import { useAuthHandler } from "@/hooks/useAuth";
 
 const Auth = ({ mode }: AuthProps) => {
   const navigate = useNavigate();
@@ -84,6 +83,7 @@ const Auth = ({ mode }: AuthProps) => {
                 <Input
                   id="password"
                   type="password"
+                  placeholder="enter your password"
                   required
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
