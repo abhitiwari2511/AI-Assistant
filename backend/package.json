@@ -11,6 +11,7 @@
   "author": "Abhishek Tiwari",
   "license": "ISC",
   "dependencies": {
+    "@google/genai": "^1.16.0",
     "@types/mongoose": "^5.11.96",
     "@types/multer": "^2.0.0",
     "bcrypt": "^6.0.0",

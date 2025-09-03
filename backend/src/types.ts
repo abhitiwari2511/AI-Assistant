@@ -1,20 +1,26 @@
 import { NextFunction } from "express";
 
 export interface UserType {
-    fullName: string;
-    email: string;
-    password: string;
-    assistantName?: string;
-    assistantImage?: string;
-    refreshToken?: string;
-    history: string[];
+  fullName: string;
+  email: string;
+  password: string;
+  assistantName: string;
+  assistantImage?: string;
+  refreshToken?: string;
+  history: string[];
 }
 
 export interface UserMethods {
-    isPasswordCorrect: (password: string) => Promise<boolean>;
-    generateAccessToken: () => string;
-    generateRefreshToken: () => string;
+  isPasswordCorrect: (password: string) => Promise<boolean>;
+  generateAccessToken: () => string;
+  generateRefreshToken: () => string;
 }
- export interface decodedToken {
-    _id: string;
- }
+export interface decodedToken {
+  _id: string;
+}
+
+export interface PromptProp {
+  prompt: string;
+  assistantName: string;
+  userName: string;
+}

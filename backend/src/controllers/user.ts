@@ -2,6 +2,7 @@ import { User } from "../models/user.model";
 import { decodedToken } from "../types";
 import asyncHandler from "../utils/asyncHandler";
 import jwt from "jsonwebtoken";
+import geminiResponse from "../utils/gemini";
 
 const generateAccessAndRefreshToken = async (userId: string) => {
   try {
@@ -203,6 +204,80 @@ const getCurrentUser = asyncHandler(async (req, res) => {
   });
 });
 
+const askAssistant = asyncHandler(async (req, res) => {
+  try {
+    const { prompt } = req.body || req.params;
+    const user = await User.findById((req as any).user._id);
+    if (!user) {
+      throw new Error("User not found");
+    }
+    const userName = user.fullName;
+    const assistantName = user.assistantName;
+    const result = await geminiResponse({ prompt, assistantName, userName });
+
+    const jsonMatch = result?.match(/{[\s\S]*}/);
+    if (!jsonMatch) {
+      return res.status(400).json({
+        message: "Invalid response format",
+      });
+    }
+    const finalResult = JSON.parse(jsonMatch[0]);
+
+    const { type } = finalResult;
+    switch (type) {
+      case "get_date":
+        return res.status(200).json({
+          type,
+          userInput: finalResult.userInput,
+          res: `Current date is ${new Date().toLocaleDateString()}`,
+        });
+      case "get_time":
+        return res.status(200).json({
+          type,
+          userInput: finalResult.userInput,
+          res: `Current time is ${new Date().toLocaleTimeString()}`,
+        });
+      case "get_day":
+        return res.status(200).json({
+          type,
+          userInput: finalResult.userInput,
+          res: `Today is ${new Date().toLocaleDateString(undefined, {
+            weekday: "long",
+          })}`,
+        });
+      case "get_month":
+        return res.status(200).json({
+          type,
+          userInput: finalResult.userInput,
+          res: `Current month is ${new Date().toLocaleString(undefined, {
+            month: "long",
+          })}`,
+        });
+      case "google_search":
+      case "youtube_search":
+      case "youtube_play":
+      case "instagram_open":
+      case "facebook_open":
+      case "weather_show":
+      case "general":
+      case "calculator_open":
+        return res.status(200).json({
+          type,
+          userInput: finalResult.userInput,
+          res: finalResult.response,
+        });
+      default:
+        return res.status(400).json({
+          response: "Sorry I did not understand that.",
+        });
+    }
+  } catch (error) {
+    return res.status(500).json({
+      message: "Ask assistant error",
+    });
+  }
+});
+
 export {
   generateAccessAndRefreshToken,
   registerUser,
@@ -210,4 +285,5 @@ export {
   logout,
   refreshAccessToken,
   getCurrentUser,
+  askAssistant,
 };

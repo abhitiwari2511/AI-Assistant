@@ -17,6 +17,16 @@ const AiName = () => {
   };
 
   const handleClick = async () => {
+    if (!assistantName.trim()) {
+    alert("Please enter an assistant name");
+    return;
+  }
+
+  if (!selection?.imageUrl && !selection?.uploadedFile) {
+    alert("Please select an image for your assistant");
+    return;
+  }
+  
     try {
       setIsLoading(true);
       const url = import.meta.env.VITE_BACKEND_URL;

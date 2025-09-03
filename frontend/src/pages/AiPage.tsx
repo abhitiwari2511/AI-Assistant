@@ -1,4 +1,5 @@
 import { Button } from "@/components/ui/button";
+import getAiResponse from "@/lib/aiResponse";
 import axios from "axios";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
@@ -34,6 +35,45 @@ const AiPage = () => {
     };
     fetchCurrentUser();
   }, [navigate]);
+
+  useEffect(() => {
+    if (
+      !("webkitSpeechRecognition" in window) &&
+      !("SpeechRecognition" in window)
+    ) {
+      console.log("Speech recognition not supported");
+      return;
+    }
+    const SpeechRecognition =
+      window.SpeechRecognition || window.webkitSpeechRecognition;
+    const recognition = new SpeechRecognition();
+
+    recognition.onstart = () => {
+      console.log("Voice recognition started");
+    };
+
+    recognition.continuous = true;
+    recognition.lang = "en-IN";
+    recognition.onresult = async (event: SpeechRecognitionEvent) => {
+      const transcript = event.results[event.results.length - 1][0].transcript;
+      console.log("Voice recognition result:", transcript);
+
+      if (
+        transcript
+          .toLowerCase()
+          .includes(`${user?.assistantName?.toLowerCase()}`)
+      ) {
+        const data = await getAiResponse(transcript);
+        console.log(data);
+      }
+    };
+
+    recognition.start();
+
+    return () => {
+      recognition.stop();
+    };
+  }, [user?.assistantName]);
 
   const handleLogout = async () => {
     try {
@@ -77,7 +117,7 @@ const AiPage = () => {
       </div>
       <div className="flex flex-col justify-center items-center h-screen gap-6">
         {user?.assistantImage && (
-          <div className="w-32 h-32 rounded-full overflow-hidden border-4 border-yellow-200">
+          <div className="w-52 h-52 rounded-full overflow-hidden border-4 border-cyan-600">
             <img
               src={user.assistantImage}
               alt={user.assistantName || "Assistant"}
@@ -85,9 +125,10 @@ const AiPage = () => {
             />
           </div>
         )}
-        <h1 className="text-3xl text-yellow-200 font-bold">
+        <h1 className="text-3xl text-cyan-600 font-bold">
           {user?.assistantName || "Your Assistant"}
         </h1>
+        <p className="text-white">Welcome back, {user?.fullName}!</p>
       </div>
     </div>
   );
