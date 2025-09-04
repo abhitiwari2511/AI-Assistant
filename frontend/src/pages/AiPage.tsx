@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import getAiResponse from "@/lib/aiResponse";
 import axios from "axios";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 interface User {
@@ -12,9 +12,18 @@ interface User {
   assistantImage?: string;
 }
 
+interface CommandData {
+  type: string;
+  userInput: string;
+  res: string;
+}
+
 const AiPage = () => {
-  const [isloading, setIsLoading] = useState<boolean>(true);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
   const [user, setUser] = useState<User | null>(null);
+  const [isListening, setIsListening] = useState<boolean>(false);
+  const speakingRef = useRef<boolean>(false);
+  const recognitionRef = useRef<SpeechRecognition | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -36,6 +45,47 @@ const AiPage = () => {
     fetchCurrentUser();
   }, [navigate]);
 
+  const voice = (text: string) => {
+    const synth = window.speechSynthesis;
+
+    synth.cancel();
+
+    const speech = new SpeechSynthesisUtterance(text);
+    speech.lang = "hi-IN"; // Set to Hindi (India)
+    speech.rate = 0.8; // Slightly slower for better clarity
+    speech.pitch = 1;
+    speech.volume = 1;
+
+    const speakingRef = { current: true };
+
+    if (recognitionRef.current) {
+      try {
+        recognitionRef.current.stop();
+      } catch (error) {
+        console.log("Error stopping recognition:", error);
+      }
+    }
+
+    speech.onend = () => {
+      speakingRef.current = false;
+      recognitionRef.current?.start();
+    };
+
+    const voices = speechSynthesis.getVoices();
+    console.log("Available voices:", voices);
+    const hindiVoice = voices.find(
+      (voice) => voice.lang.includes("hi") || voice.lang.includes("hindi")
+    );
+
+    if (hindiVoice) {
+      speech.voice = hindiVoice;
+      console.log("Using Hindi voice:", hindiVoice.name);
+    } else {
+      console.log("Hindi voice not found, using default");
+    }
+    synth.speak(speech);
+  };
+
   useEffect(() => {
     if (
       !("webkitSpeechRecognition" in window) &&
@@ -47,31 +97,107 @@ const AiPage = () => {
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
+    recognitionRef.current = recognition;
 
     recognition.onstart = () => {
-      console.log("Voice recognition started");
+      isRecognisingRef.current = true;
+      setIsListening(true);
+      // console.log("Voice recognition started. Try speaking into the microphone.");
+    };
+
+    const handleCommand = (data: CommandData) => {
+      const { type, userInput, res } = data;
+      voice(res);
+      if (type === "google_search") {
+        const query = encodeURIComponent(userInput);
+        window.open(`https://google.com/search?q=${query}`, "_blank");
+      }
+      if (type === "calculator_open") {
+        const query = encodeURIComponent(userInput);
+        window.open(`https://google.com/search?q=${query}`, "_blank");
+      }
+      if (type === "instagram_open") {
+        const query = encodeURIComponent(userInput);
+        window.open(`https://www.instagram.com/${query}/`, "_blank");
+      }
+      if (type === "facebook_open") {
+        const query = encodeURIComponent(userInput);
+        window.open(`https://facebook.com/${query}`, "_blank");
+      }
+      if (type === "weather_show") {
+        const query = encodeURIComponent(userInput);
+        window.open(`https://google.com/search?q=${query}`, "_blank");
+      }
+      if (type === "youtube_search" || type === "youtube_play") {
+        const query = encodeURIComponent(userInput);
+        window.open(
+          `https://www.youtube.com/results?search_query=${query}`,
+          "_blank"
+        );
+      }
     };
 
     recognition.continuous = true;
     recognition.lang = "en-IN";
+
+    const isRecognisingRef = { current: false };
+
     recognition.onresult = async (event: SpeechRecognitionEvent) => {
       const transcript = event.results[event.results.length - 1][0].transcript;
-      console.log("Voice recognition result:", transcript);
-
+      console.log("heard: ", transcript);
       if (
         transcript
           .toLowerCase()
           .includes(`${user?.assistantName?.toLowerCase()}`)
       ) {
-        const data = await getAiResponse(transcript);
-        console.log(data);
+        try {
+          const data = await getAiResponse(transcript);
+          if (data && (data as { res: string }).res) {
+            handleCommand(data as CommandData);
+          } else {
+            voice("Sorry, I couldn't process your request.");
+          }
+        } catch (error) {
+          console.error("Error getting AI response:", error);
+          voice("Sorry, there was an error processing your request.");
+        }
       }
     };
 
-    recognition.start();
+    const safeRecognise = () => {
+      if (!speakingRef.current && !isRecognisingRef.current) {
+        try {
+          recognition.start();
+        } catch (error) {
+          console.log("Recognition already running", error);
+        }
+      }
+    };
+
+    recognition.onend = () => {
+      isRecognisingRef.current = false;
+      setIsListening(false);
+
+      if (!speakingRef.current) {
+        setTimeout(() => {
+          safeRecognise();
+        }, 1000);
+      }
+    };
+
+    const repeatRecognition = setInterval(() => {
+      if (!isRecognisingRef.current && !speakingRef.current) {
+        safeRecognise();
+      }
+    }, 10000);
+
+    safeRecognise();
 
     return () => {
       recognition.stop();
+      setIsListening(false);
+      isRecognisingRef.current = false;
+      clearInterval(repeatRecognition);
     };
   }, [user?.assistantName]);
 
@@ -89,7 +215,7 @@ const AiPage = () => {
     navigate("/choose-avatar");
   };
 
-  if (isloading) {
+  if (isLoading) {
     return (
       <div className="flex justify-center items-center h-screen">
         <div className="text-white text-xl">Loading...</div>

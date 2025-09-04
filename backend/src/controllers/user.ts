@@ -268,7 +268,7 @@ const askAssistant = asyncHandler(async (req, res) => {
         });
       default:
         return res.status(400).json({
-          response: "Sorry I did not understand that.",
+          res: "Sorry I did not understand that.",
         });
     }
   } catch (error) {
