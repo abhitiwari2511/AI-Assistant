@@ -51,12 +51,12 @@ const AiPage = () => {
     synth.cancel();
 
     const speech = new SpeechSynthesisUtterance(text);
-    speech.lang = "hi-IN"; // Set to Hindi (India)
-    speech.rate = 0.8; // Slightly slower for better clarity
+    speech.lang = "en-IN";
+    speech.rate = 1.8;
     speech.pitch = 1;
     speech.volume = 1;
 
-    const speakingRef = { current: true };
+    speakingRef.current = true;
 
     if (recognitionRef.current) {
       try {
@@ -66,27 +66,79 @@ const AiPage = () => {
       }
     }
 
+    speech.onstart = () => {
+      console.log("Speech started");
+    };
+
     speech.onend = () => {
+      console.log("Speech ended");
       speakingRef.current = false;
-      recognitionRef.current?.start();
+      setTimeout(() => {
+        if (recognitionRef.current && !speakingRef.current) {
+          try {
+            recognitionRef.current.start();
+          } catch (error) {
+            console.log("Error restarting recognition:", error);
+          }
+        }
+      }, 1000);
+    };
+
+    speech.onerror = (event) => {
+      console.error("Speech error:", event);
+      speakingRef.current = false;
+
+      setTimeout(() => {
+        if (recognitionRef.current && !speakingRef.current) {
+          try {
+            recognitionRef.current.start();
+          } catch (error) {
+            console.log(
+              "Error restarting recognition after speech error:",
+              error
+            );
+          }
+        }
+      }, 1000);
+    };
+
+    const setVoice = () => {
+      const voices = speechSynthesis.getVoices();
+      console.log("Available voices:", voices.length);
+
+      const hindiVoice = voices.find((voice) => voice.lang === "en-IN");
+
+      if (hindiVoice) {
+        speech.voice = hindiVoice;
+        console.log("Using Hindi voice:", hindiVoice.name);
+      } else {
+        const indianVoice = voices.find((voice) => voice.lang === "en-IN");
+        if (indianVoice) {
+          speech.voice = indianVoice;
+          console.log("Using Indian English voice:", indianVoice.name);
+        } else {
+          console.log("No Hindi/Indian voice found, using default");
+        }
+      }
+      synth.speak(speech);
     };
 
     const voices = speechSynthesis.getVoices();
-    console.log("Available voices:", voices);
-    const hindiVoice = voices.find(
-      (voice) => voice.lang.includes("hi") || voice.lang.includes("hindi")
-    );
-
-    if (hindiVoice) {
-      speech.voice = hindiVoice;
-      console.log("Using Hindi voice:", hindiVoice.name);
+    if (voices.length > 0) {
+      setVoice();
     } else {
-      console.log("Hindi voice not found, using default");
+      speechSynthesis.addEventListener("voiceschanged", setVoice, {
+        once: true,
+      });
     }
-    synth.speak(speech);
   };
 
   useEffect(() => {
+    if (!user?.assistantName) {
+      console.log("Waiting for user data...");
+      return;
+    }
+
     if (
       !("webkitSpeechRecognition" in window) &&
       !("SpeechRecognition" in window)
@@ -94,20 +146,58 @@ const AiPage = () => {
       console.log("Speech recognition not supported");
       return;
     }
+
     const SpeechRecognition =
       window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognitionRef.current = recognition;
 
+    recognition.continuous = true;
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
+
+    let isRecognitionActive = false;
+
+    const safeStart = () => {
+      if (isRecognitionActive || speakingRef.current) {
+        console.log("Cannot start - already active or speaking");
+        return;
+      }
+
+      try {
+        recognition.start();
+        isRecognitionActive = true;
+        console.log("Recognition started");
+      } catch (error) {
+        console.log("Recognition start error:", error);
+      }
+    };
+
     recognition.onstart = () => {
-      isRecognisingRef.current = true;
+      console.log(
+        "Voice recognition started. Try speaking into the microphone."
+      );
+      isRecognitionActive = true;
       setIsListening(true);
-      // console.log("Voice recognition started. Try speaking into the microphone.");
+    };
+
+    recognition.onend = () => {
+      console.log("Recognition ended");
+      isRecognitionActive = false;
+      setIsListening(false);
+
+      // jab nhi bolta tb restart
+      if (!speakingRef.current) {
+        setTimeout(() => {
+          safeStart();
+        }, 1000);
+      }
     };
 
     const handleCommand = (data: CommandData) => {
       const { type, userInput, res } = data;
       voice(res);
+
       if (type === "google_search") {
         const query = encodeURIComponent(userInput);
         window.open(`https://google.com/search?q=${query}`, "_blank");
@@ -137,21 +227,20 @@ const AiPage = () => {
       }
     };
 
-    recognition.continuous = true;
-    recognition.lang = "en-IN";
-
-    const isRecognisingRef = { current: false };
-
     recognition.onresult = async (event: SpeechRecognitionEvent) => {
       const transcript = event.results[event.results.length - 1][0].transcript;
       console.log("heard: ", transcript);
+
       if (
-        transcript
-          .toLowerCase()
-          .includes(`${user?.assistantName?.toLowerCase()}`)
+        user?.assistantName &&
+        transcript.toLowerCase().includes(user.assistantName.toLowerCase())
       ) {
+        console.log("Assistant name detected!");
+
         try {
           const data = await getAiResponse(transcript);
+          console.log("AI response:", data);
+
           if (data && (data as { res: string }).res) {
             handleCommand(data as CommandData);
           } else {
@@ -164,40 +253,15 @@ const AiPage = () => {
       }
     };
 
-    const safeRecognise = () => {
-      if (!speakingRef.current && !isRecognisingRef.current) {
-        try {
-          recognition.start();
-        } catch (error) {
-          console.log("Recognition already running", error);
-        }
-      }
-    };
-
-    recognition.onend = () => {
-      isRecognisingRef.current = false;
-      setIsListening(false);
-
-      if (!speakingRef.current) {
-        setTimeout(() => {
-          safeRecognise();
-        }, 1000);
-      }
-    };
-
-    const repeatRecognition = setInterval(() => {
-      if (!isRecognisingRef.current && !speakingRef.current) {
-        safeRecognise();
-      }
-    }, 10000);
-
-    safeRecognise();
+    // Start initial recognition
+    safeStart();
 
     return () => {
-      recognition.stop();
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
       setIsListening(false);
-      isRecognisingRef.current = false;
-      clearInterval(repeatRecognition);
     };
   }, [user?.assistantName]);
 
@@ -255,6 +319,21 @@ const AiPage = () => {
           {user?.assistantName || "Your Assistant"}
         </h1>
         <p className="text-white">Welcome back, {user?.fullName}!</p>
+
+        <div className="flex items-center gap-2">
+          <div
+            className={`w-3 h-3 rounded-full ${
+              isListening ? "bg-green-500 animate-pulse" : "bg-red-500"
+            }`}
+          ></div>
+          <p className="text-gray-300">
+            {isListening ? "Listening..." : "Not listening"}
+          </p>
+        </div>
+
+        <p className="text-gray-400 text-center">
+          Say "{user?.assistantName}" to activate
+        </p>
       </div>
     </div>
   );
