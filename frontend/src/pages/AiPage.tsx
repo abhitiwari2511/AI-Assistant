@@ -270,7 +270,7 @@ const AiPage = () => {
       const url = import.meta.env.VITE_BACKEND_URL;
       const endPoints = `${url}/api/v1/users/logout`;
       await axios.post(endPoints, {}, { withCredentials: true });
-      navigate("/signin");
+      navigate("/");
     } catch (error) {
       console.log(error);
     }

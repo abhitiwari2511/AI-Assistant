@@ -1,6 +1,7 @@
 import { AvatarCard, UploadCard } from "@/components/AvatarCard";
 import { Button } from "@/components/ui/button";
-import { useState } from "react";
+import { CheckAuth } from "@/hooks/useAuth";
+import { useEffect, useState } from "react";
 import { LuImagePlus } from "react-icons/lu";
 import { useNavigate } from "react-router-dom";
 
@@ -15,6 +16,20 @@ const CustomizePage = () => {
   const [selectedKey, setSelectedKey] = useState<string>("image-0");
   const [uploadedFile, setUploadedFile] = useState<File | null>(null);
   const navigate = useNavigate();
+  const { loggedIn, checkAuthStatus } = CheckAuth();
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  // Don't render if not logged in (will be redirected)
+  if (!loggedIn) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-white text-xl">Redirecting to login...</div>
+      </div>
+    );
+  }
 
   return (
     <div className="mx-auto flex flex-col justify-center items-center h-screen max-w-5xl">
@@ -43,9 +58,14 @@ const CustomizePage = () => {
           }}
         />
       </div>
-      <Button className="mt-12 hover:bg-cyan-200 cursor-pointer rounded-full bg-white text-black text-2xl h-[3rem] w-[8rem]" onClick={() => navigate("/ai-name", {
-        state: { selectedKey, uploadedFile, imageUrl: image[0].imgUrl}
-      })}>
+      <Button
+        className="mt-12 hover:bg-cyan-200 cursor-pointer rounded-full bg-white text-black text-2xl h-[3rem] w-[8rem]"
+        onClick={() =>
+          navigate("/ai-name", {
+            state: { selectedKey, uploadedFile, imageUrl: image[0].imgUrl },
+          })
+        }
+      >
         Next
       </Button>
     </div>

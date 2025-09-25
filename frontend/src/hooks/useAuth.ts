@@ -58,3 +58,28 @@ export function useAuthHandler({ mode }: AuthProps) {
   };
   return { loading, handleAuth };
 }
+
+export const CheckAuth = () => {
+  const navigate = useNavigate();
+  const [loggedIn, setLoggedIn] = useState(false);
+
+  const checkAuthStatus = async () => {
+    try {
+      const url = import.meta.env.VITE_BACKEND_URL;
+      const endPoints = `${url}/api/v1/users/current-user`;
+      const response = await axios.get(endPoints, { withCredentials: true });
+      if (response.status === 200 && response.data) {
+        setLoggedIn(true);
+      } else {
+        setLoggedIn(false);
+        navigate("/signin");
+      }
+    } catch (error: unknown) {
+      console.log("Failed to fetch user data", error);
+      console.log("Failed to fetch user data", error);
+      setLoggedIn(false);
+      navigate("/signin");
+    }
+  };
+  return { loggedIn, setLoggedIn, checkAuthStatus };
+};

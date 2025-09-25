@@ -1,14 +1,30 @@
 import { useLocation, useNavigate } from "react-router-dom";
 import { Button } from "./ui/button";
 import { Input } from "./ui/input";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import axios from "axios";
+import { CheckAuth } from "@/hooks/useAuth";
 
 const AiName = () => {
   const [assistantName, setAssistantName] = useState("");
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const navigate = useNavigate();
   const location = useLocation();
+
+  const { loggedIn, checkAuthStatus } = CheckAuth();
+
+  useEffect(() => {
+    checkAuthStatus();
+  }, []);
+
+  // Don't render if not logged in (will be redirected)
+  if (!loggedIn) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-white text-xl">Redirecting to login...</div>
+      </div>
+    );
+  }
 
   const selection = location.state as {
     selectedKey: string;
@@ -18,15 +34,15 @@ const AiName = () => {
 
   const handleClick = async () => {
     if (!assistantName.trim()) {
-    alert("Please enter an assistant name");
-    return;
-  }
+      alert("Please enter an assistant name");
+      return;
+    }
 
-  if (!selection?.imageUrl && !selection?.uploadedFile) {
-    alert("Please select an image for your assistant");
-    return;
-  }
-  
+    if (!selection?.imageUrl && !selection?.uploadedFile) {
+      alert("Please select an image for your assistant");
+      return;
+    }
+
     try {
       setIsLoading(true);
       const url = import.meta.env.VITE_BACKEND_URL;
@@ -76,7 +92,8 @@ const AiName = () => {
       {assistantName.length > 0 && (
         <Button
           className="mt-12 hover:bg-cyan-200 cursor-pointer rounded-full bg-white text-black text-md h-[3rem] w-fit"
-          onClick={handleClick} disabled={isLoading}
+          onClick={handleClick}
+          disabled={isLoading}
         >
           {isLoading ? "Loading..." : "Create Your Assistant"}
         </Button>

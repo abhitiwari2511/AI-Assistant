@@ -1,5 +1,3 @@
-import { NextFunction } from "express";
-
 export interface UserType {
   fullName: string;
   email: string;
