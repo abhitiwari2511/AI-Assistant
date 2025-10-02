@@ -76,7 +76,6 @@ export const CheckAuth = () => {
       }
     } catch (error: unknown) {
       console.log("Failed to fetch user data", error);
-      console.log("Failed to fetch user data", error);
       setLoggedIn(false);
       navigate("/signin");
     }

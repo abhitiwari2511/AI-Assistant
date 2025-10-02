@@ -84,7 +84,7 @@ const login = asyncHandler(async (req, res) => {
 
   const passValid = await user.isPasswordCorrect(password);
   if (!passValid) {
-    res.status(401).json({
+    return res.status(401).json({
       message: "Password is incorrect",
     });
   }
