@@ -3,16 +3,20 @@ import cors from "cors";
 import cookieParser from "cookie-parser";
 const app = express();
 
-app.use(cors({
+app.set("trust proxy", 1);
+
+app.use(
+  cors({
     origin: process.env.FRONTEND_URL,
-    credentials: true
-}));
+    credentials: true,
+  })
+);
 app.use(express.json());
-app.use(express.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
 // routes importing
-import userRouter from "./routes/user.route"
+import userRouter from "./routes/user.route";
 // routes declare
 app.use("/api/v1/users", userRouter);
 
