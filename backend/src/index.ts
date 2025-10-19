@@ -1,9 +1,10 @@
 import dotenv from "dotenv";
 import app from "./app";
 import connectDB from "./db/db";
+import path from "path";
 
 dotenv.config({
-  path: "./.env",
+  path: path.resolve(__dirname, "../.env"),
 });
 
 connectDB()
