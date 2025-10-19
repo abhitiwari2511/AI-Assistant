@@ -100,7 +100,7 @@ const login = asyncHandler(async (req, res) => {
   const options = {
     httpOnly: true,
     secure: true,
-    sameSite: "none" as const
+    sameSite: "none" as const,
   };
 
   return res
@@ -130,7 +130,7 @@ const logout = asyncHandler(async (req, res) => {
   const options = {
     httpOnly: true,
     secure: true,
-    sameSite: "none" as const
+    sameSite: "none" as const,
   };
 
   return res
@@ -180,7 +180,7 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     const options = {
       httpOnly: true,
       secure: true,
-      sameSite: "none" as const
+      sameSite: "none" as const,
     };
 
     const newToken = await generateAccessAndRefreshToken(user._id.toString());
@@ -209,22 +209,57 @@ const getCurrentUser = asyncHandler(async (req, res) => {
 
 const askAssistant = asyncHandler(async (req, res) => {
   try {
-    const { prompt } = req.body || req.params;
+    const { prompt } = req.body;
+
+    // Validate prompt
+    if (!prompt || typeof prompt !== "string" || prompt.trim() === "") {
+      return res.status(400).json({
+        message: "Prompt is required and must be a non-empty string",
+      });
+    }
+
     const user = await User.findById((req as any).user._id);
     if (!user) {
-      throw new Error("User not found");
+      return res.status(404).json({
+        message: "User not found",
+      });
     }
+
     const userName = user.fullName;
-    const assistantName = user.assistantName;
+    const assistantName = user.assistantName || "Assistant";
     const result = await geminiResponse({ prompt, assistantName, userName });
+
+    if (!result || result === "Error") {
+      return res.status(500).json({
+        message: "AI service is currently unavailable. Please try again later.",
+      });
+    }
 
     const jsonMatch = result?.match(/{[\s\S]*}/);
     if (!jsonMatch) {
+      console.log("AI Response without JSON:", result);
       return res.status(400).json({
-        message: "Invalid response format",
+        message: "Invalid response format from AI service",
       });
     }
-    const finalResult = JSON.parse(jsonMatch[0]);
+
+    let finalResult;
+    try {
+      finalResult = JSON.parse(jsonMatch[0]);
+    } catch (parseError) {
+      console.log("JSON Parse Error:", parseError);
+      console.log("Raw AI Response:", result);
+      return res.status(400).json({
+        message: "Failed to parse AI response",
+      });
+    }
+
+    if (!finalResult.type || !finalResult.userInput) {
+      console.log("Invalid AI Response Structure:", finalResult);
+      return res.status(400).json({
+        message: "Invalid AI response structure",
+      });
+    }
 
     const { type } = finalResult;
     switch (type) {
@@ -275,8 +310,9 @@ const askAssistant = asyncHandler(async (req, res) => {
         });
     }
   } catch (error) {
+    console.error("Ask assistant error:", error);
     return res.status(500).json({
-      message: "Ask assistant error",
+      message: "Internal server error. Please try again later.",
     });
   }
 });

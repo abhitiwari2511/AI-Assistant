@@ -1,7 +1,9 @@
 import { GoogleGenAI } from "@google/genai";
 import { PromptProp } from "../types";
 
-const ai = new GoogleGenAI({});
+const ai = new GoogleGenAI({
+  apiKey: process.env.GEMINI_API_KEY || "",
+});
 
 const geminiResponse = async ({
   prompt,
@@ -9,6 +11,12 @@ const geminiResponse = async ({
   userName,
 }: PromptProp) => {
   try {
+    // Check if API key is available
+    if (!process.env.GEMINI_API_KEY) {
+      console.error("GEMINI_API_KEY is not set in environment variables");
+      return "Error";
+    }
+
     const promptText = `You are a virtual assitant named ${assistantName} created by ${userName}.
     Your are not Google. You will now behave like a voice-enabled assistant.
     Your task is to understand the user's natural language and input the response with a JSON object like this:
@@ -48,9 +56,15 @@ now your userInput - ${prompt}`;
       model: "gemini-2.5-flash",
       contents: promptText,
     });
+
+    if (!response || !response.text) {
+      console.error("No response received from Gemini API");
+      return "Error";
+    }
+
     return response.text;
   } catch (e) {
-    console.log(e);
+    console.error("Gemini API Error:", e);
     return "Error";
   }
 };
