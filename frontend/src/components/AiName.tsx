@@ -78,12 +78,12 @@ const AiName = () => {
   };
 
   return (
-    <div className="flex flex-col justify-center h-screen items-center">
-      <h1 className="text-3xl text-yellow-200 font-bold mb-14">
+    <div className="mx-auto flex flex-col justify-center items-center min-h-screen max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <h1 className="text-2xl lg:text-3xl text-yellow-200 font-bold mb-8 lg:mb-14">
         Your Assistant Name
       </h1>
       <Input
-        className="text-white w-full border-2 max-w-md h-[3rem]"
+        className="text-white w-full border-2 max-w-[18rem] lg:max-w-md h-[3rem]"
         placeholder="eg. Lambo"
         onChange={(e) => setAssistantName(e.target.value)}
         value={assistantName}

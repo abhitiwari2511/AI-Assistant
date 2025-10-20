@@ -6,6 +6,7 @@ import CustomizePage from "./pages/CustomizePage";
 import SplashCursor from "./components/ui/SplashCursor/SplashCursor"
 import AiName from "./components/AiName";
 import AiPage from "./pages/AiPage";
+import { Analytics } from "@vercel/analytics/react";
 
 function App() {
   return (
@@ -19,6 +20,7 @@ function App() {
         <Route path="/ai-name" element={<AiName />} />
         <Route path="/ai" element={<AiPage />} />
       </Routes>
+      <Analytics />
     </div>
   );
 }

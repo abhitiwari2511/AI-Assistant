@@ -10,13 +10,13 @@ const HeroSection = () => {
   }
 
   return (
-    <div className="h-screen relative">
+    <div className="h-screen relative overflow-x-hidden">
       <Navbar />
-      <div className="h-full flex items-center justify-center">
-        <div className="max-w-[38rem] mt-10 mx-auto text-white text-center">
+      <div className="absolute inset-0 lg:h-full h-[42rem] flex items-center justify-center">
+        <div className="max-w-[20rem] lg:max-w-[38rem] lg:mt-10 mx-auto text-white text-center">
           <Button
             variant={"outline"}
-            className="mb-4 h-8 bg-zinc-800/40 rounded-full"
+            className="mb-4 h-8 w-fit bg-zinc-800/40 rounded-full"
           >
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -39,13 +39,13 @@ const HeroSection = () => {
             </svg>
             Introducing AI Assistant
           </Button>
-          <h1 className="font-bold max-w-[30rem] text-white w-full text-[2rem]">
+          <h1 className="font-bold max-w-[30rem] text-white w-full text-[20px] lg:text-[2rem]">
             Welcome to the world of an AI The Future is here !!
           </h1>
 
           <Button
             variant={"outline"}
-            className="text-black mt-10 cursor-pointer hover:bg-blue-300"
+            className="text-black mt-8 lg:mt-10 cursor-pointer hover:bg-blue-300"
             onClick={handleClick}
           >
             Get Started

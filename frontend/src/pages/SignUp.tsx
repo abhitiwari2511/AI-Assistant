@@ -12,7 +12,7 @@ const SignUp = () => {
           speed={1.0}
         />
       </div>
-      <div className="flex items-center relative min-h-screen z-10 justify-center">
+      <div className="flex items-center relative min-h-[42rem] lg:min-h-screen z-10 justify-center">
         <Auth mode="signup" />
       </div>
     </div>

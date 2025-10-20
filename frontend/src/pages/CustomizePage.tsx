@@ -32,11 +32,11 @@ const CustomizePage = () => {
   }
 
   return (
-    <div className="mx-auto flex flex-col justify-center items-center h-screen max-w-5xl">
-      <h1 className="text-3xl text-yellow-200 font-bold mb-14">
+    <div className="mx-auto flex flex-col justify-center items-center min-h-screen max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+      <h1 className="text-2xl lg:text-3xl text-yellow-200 font-bold mb-8 sm:mb-12 lg:mb-14 text-center">
         Your Assistant Avatar
       </h1>
-      <div className="flex items-center gap-14">
+      <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-8 lg:gap-14 w-full max-w-3xl">
         {image.map(({ imgUrl }, index) => {
           const key = `image-${index}`;
           return (
@@ -59,7 +59,7 @@ const CustomizePage = () => {
         />
       </div>
       <Button
-        className="mt-12 hover:bg-cyan-200 cursor-pointer rounded-full bg-white text-black text-2xl h-[3rem] w-[8rem]"
+        className="mt-8 sm:mt-10 lg:mt-12 hover:bg-cyan-200 cursor-pointer rounded-full bg-white text-black text-lg sm:text-xl lg:text-2xl h-[2.5rem] w-[6rem] sm:h-[3rem] sm:w-[8rem] transition-all duration-200"
         onClick={() =>
           navigate("/ai-name", {
             state: { selectedKey, uploadedFile, imageUrl: image[0].imgUrl },
