@@ -52,7 +52,7 @@ const AiPage = () => {
 
     const speech = new SpeechSynthesisUtterance(text);
     speech.lang = "en-IN";
-    speech.rate = 1.8;
+    speech.rate = 1;
     speech.pitch = 1;
     speech.volume = 1;
 
