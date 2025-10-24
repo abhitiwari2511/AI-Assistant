@@ -11,11 +11,25 @@ const AiName = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  const { loggedIn, checkAuthStatus } = CheckAuth();
+  const { loggedIn, checkAuthStatus, loading, hasAssistant } = CheckAuth();
 
   useEffect(() => {
     checkAuthStatus();
   }, []);
+
+  useEffect(() => {
+    if (!loading && loggedIn && hasAssistant) {
+      navigate("/ai");
+    }
+  }, [loading, loggedIn, hasAssistant, navigate]);
+
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center h-screen">
+        <div className="text-white text-xl">Loading...</div>
+      </div>
+    );
+  }
 
   // Don't render if not logged in (will be redirected)
   if (!loggedIn) {

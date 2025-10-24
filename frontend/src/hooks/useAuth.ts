@@ -36,7 +36,8 @@ export function useAuthHandler({ mode }: AuthProps) {
         ? `${url}/api/v1/users/registerUser`
         : `${url}/api/v1/users/login`;
 
-      await axios.post(
+      // backend returns { user: UserData } so type accordingly
+      const res = await axios.post<{ user: UserData }>(
         endPoints,
         {
           email,
@@ -50,7 +51,15 @@ export function useAuthHandler({ mode }: AuthProps) {
           },
         }
       );
-      navigate("/choose-avatar");
+      const userData = res.data.user;
+      console.log(userData);
+      if (userData?.assistantName && userData?.assistantImage) {
+        // agr user ne setup kra hai to ai page pr jao
+        navigate("/ai");
+      } else {
+        // new user hai to customize page pr jao
+        navigate("/choose-avatar");
+      }
     } catch (error: unknown) {
       console.error("Authentication error:", error);
       setLoading(false);
@@ -59,17 +68,35 @@ export function useAuthHandler({ mode }: AuthProps) {
   return { loading, handleAuth };
 }
 
+type UserData = {
+  assistantName?: string;
+  assistantImage?: string;
+  [key: string]: string | undefined;
+};
+
 export const CheckAuth = () => {
   const navigate = useNavigate();
   const [loggedIn, setLoggedIn] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [hasAssistant, setHasAssistant] = useState(false);
+  const [userData, setUserData] = useState<UserData | null>(null);
 
   const checkAuthStatus = async () => {
+    setLoading(true);
     try {
       const url = import.meta.env.VITE_BACKEND_URL;
       const endPoints = `${url}/api/v1/users/current-user`;
-      const response = await axios.get(endPoints, { withCredentials: true });
+      const response = await axios.get<UserData>(endPoints, {
+        withCredentials: true,
+      });
       if (response.status === 200 && response.data) {
         setLoggedIn(true);
+        setUserData(response.data);
+        if (response.data.assistantName && response.data.assistantImage) {
+          setHasAssistant(true);
+        } else {
+          setHasAssistant(false);
+        }
       } else {
         setLoggedIn(false);
         navigate("/signin");
@@ -78,7 +105,16 @@ export const CheckAuth = () => {
       console.log("Failed to fetch user data", error);
       setLoggedIn(false);
       navigate("/signin");
+    } finally {
+      setLoading(false);
     }
   };
-  return { loggedIn, setLoggedIn, checkAuthStatus };
+  return {
+    loggedIn,
+    setLoggedIn,
+    checkAuthStatus,
+    loading,
+    hasAssistant,
+    userData,
+  };
 };
