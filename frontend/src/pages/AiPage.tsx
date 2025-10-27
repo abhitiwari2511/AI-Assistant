@@ -24,6 +24,7 @@ const AiPage = () => {
   const [isListening, setIsListening] = useState<boolean>(false);
   const speakingRef = useRef<boolean>(false);
   const recognitionRef = useRef<SpeechRecognition | null>(null);
+  const isMountedRef = useRef<boolean>(true);
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -74,7 +75,11 @@ const AiPage = () => {
       console.log("Speech ended");
       speakingRef.current = false;
       setTimeout(() => {
-        if (recognitionRef.current && !speakingRef.current) {
+        if (
+          isMountedRef.current &&
+          recognitionRef.current &&
+          !speakingRef.current
+        ) {
           try {
             recognitionRef.current.start();
           } catch (error) {
@@ -89,7 +94,11 @@ const AiPage = () => {
       speakingRef.current = false;
 
       setTimeout(() => {
-        if (recognitionRef.current && !speakingRef.current) {
+        if (
+          isMountedRef.current &&
+          recognitionRef.current &&
+          !speakingRef.current
+        ) {
           try {
             recognitionRef.current.start();
           } catch (error) {
@@ -159,8 +168,8 @@ const AiPage = () => {
     let isRecognitionActive = false;
 
     const safeStart = () => {
-      if (isRecognitionActive || speakingRef.current) {
-        console.log("Cannot start - already active or speaking");
+      if (!isMountedRef.current || isRecognitionActive || speakingRef.current) {
+        console.log("Cannot start - not mounted, already active, or speaking");
         return;
       }
 
@@ -186,10 +195,12 @@ const AiPage = () => {
       isRecognitionActive = false;
       setIsListening(false);
 
-      // jab nhi bolta tb restart
-      if (!speakingRef.current) {
+      // jab nhi bolta tb restart - but only if component is still mounted
+      if (!speakingRef.current && isMountedRef.current) {
         setTimeout(() => {
-          safeStart();
+          if (isMountedRef.current) {
+            safeStart();
+          }
         }, 1000);
       }
     };
@@ -257,16 +268,89 @@ const AiPage = () => {
     safeStart();
 
     return () => {
+      console.log("Cleaning up speech recognition and synthesis...");
+
+      // Mark as unmounted to prevent restarts
+      isMountedRef.current = false;
+
+      // Stop speech recognition
       if (recognitionRef.current) {
-        recognitionRef.current.stop();
-        recognitionRef.current = null;
+        try {
+          recognitionRef.current.stop();
+          recognitionRef.current.onend = null;
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current = null;
+        } catch (error) {
+          console.log("Error stopping recognition:", error);
+        }
       }
+
+      // Stop speech synthesis
+      const synth = window.speechSynthesis;
+      if (synth.speaking) {
+        synth.cancel();
+      }
+
+      speakingRef.current = false;
       setIsListening(false);
     };
   }, [user?.assistantName]);
 
+  // Cleanup on component unmount (when leaving the page)
+  useEffect(() => {
+    // Set mounted flag to true when component mounts
+    isMountedRef.current = true;
+
+    return () => {
+      console.log("Component unmounting - cleaning up all media access...");
+
+      // Mark as unmounted to prevent any restarts
+      isMountedRef.current = false;
+
+      // Stop speech recognition
+      if (recognitionRef.current) {
+        try {
+          recognitionRef.current.stop();
+          recognitionRef.current.onend = null;
+          recognitionRef.current.onresult = null;
+          recognitionRef.current.onerror = null;
+          recognitionRef.current = null;
+        } catch (error) {
+          console.log("Error stopping recognition on unmount:", error);
+        }
+      }
+
+      // Stop speech synthesis
+      const synth = window.speechSynthesis;
+      if (synth.speaking) {
+        synth.cancel();
+      }
+
+      speakingRef.current = false;
+      setIsListening(false);
+    };
+  }, []);
+
   const handleLogout = async () => {
     try {
+      // Mark as unmounted to prevent restarts
+      isMountedRef.current = false;
+
+      // Stop all speech recognition and synthesis before logout
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
+        recognitionRef.current = null;
+      }
+
+      const synth = window.speechSynthesis;
+      if (synth.speaking) {
+        synth.cancel();
+      }
+
+      speakingRef.current = false;
+      setIsListening(false);
+
       const url = import.meta.env.VITE_BACKEND_URL;
       const endPoints = `${url}/api/v1/users/logout`;
       await axios.post(endPoints, {}, { withCredentials: true });
